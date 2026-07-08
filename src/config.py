@@ -1,8 +1,10 @@
 """
 Project configuration.
 
-This module contains the main market conventions and modelling assumptions
+This module contains the main market conventions and numerical assumptions
 used in the EUR swaption pricing and sensitivity analysis framework.
+
+The conventions follow the original VBA/Excel AIRMM project.
 """
 
 from __future__ import annotations
@@ -10,6 +12,7 @@ from __future__ import annotations
 from datetime import date
 
 
+# Valuation date
 VALUATION_DATE = date(2019, 10, 31)
 
 # Market conventions
@@ -27,13 +30,8 @@ IRS_SPOT_LAG_BUSINESS_DAYS = 2
 DISCOUNTING = "OIS"
 OIS_COMPOUNDING = "Continuous"
 
-# Swaption settlement
-PHYSICAL_SETTLEMENT = "Physical"
-CASH_IRR_SETTLEMENT = "Cash IRR"
-
 # Quotation convention
 NOTIONAL = 10_000.0
-PREMIUM_UNIT = "forward premium"
 PREMIUM_SCALE_BPS = 10_000.0
 
 # Models
@@ -43,7 +41,7 @@ SHIFTED_BLACK_MODEL = "Shifted-Black"
 SHIFT_VALUES = [0.01, 0.02, 0.03, 0.05]
 DEFAULT_SHIFT = 0.05
 
-# Numerical inversion
+# Numerical inversion parameters
 SIGMA_LOW = 1e-8
 SIGMA_INITIAL_HIGH = 0.5
 SIGMA_MAX = 50.0
@@ -58,13 +56,17 @@ FORWARD_BUMP_1BP = 0.0001
 DISCOUNT_PARALLEL_BUMP_1BP = 0.0001
 VOL_BUMP_1PC = 0.01
 
+# Option directions
+PAYER = 1
+RECEIVER = -1
+
 # Strategy names
 STRADDLE = "straddle"
 STRANGLE = "strangle"
 COLLAR = "collar"
 
-STRATEGIES = [STRADDLE, STRANGLE, COLLAR]
-
-# Option directions
-PAYER = 1
-RECEIVER = -1
+STRATEGIES = [
+    STRADDLE,
+    STRANGLE,
+    COLLAR,
+]
