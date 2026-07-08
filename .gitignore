@@ -1,0 +1,28 @@
+# Raw market data and original deliverables
+data/
+*.xlsx
+*.xls
+*.xlsm
+*.pdf
+*.bas
+
+# Python cache
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local configuration
+.env
+
+# Generated binary/intermediate files
+*.pkl
+*.joblib
+
+# System files
+.DS_Store
+Thumbs.db
