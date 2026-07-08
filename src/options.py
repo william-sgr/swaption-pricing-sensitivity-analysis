@@ -1,11 +1,12 @@
 """
 Option direction utilities.
 
-The VBA project uses:
-- isCall = True / False in volatility-cube modules;
-- omega = +1 / -1 in sensitivity modules.
+The VBA project uses both:
+- isCall = True / False
+- omega = +1 / -1
 
-This file centralizes the payer/receiver mapping.
+This module centralizes the payer/receiver mapping and accepts composite
+labels such as CALL/PAYER and PUT/RECEIVER, as used in the long tables.
 """
 
 from __future__ import annotations
@@ -17,15 +18,22 @@ def omega_from_option_type(option_type: str) -> int:
     """
     Convert option type into omega.
 
-    Payer swaption  -> +1
-    Receiver swaption -> -1
-    """
-    option_type = option_type.strip().lower()
+    Accepted payer labels:
+        payer, pay, call, c, CALL/PAYER
 
-    if option_type in {"payer", "pay", "call", "c"}:
+    Accepted receiver labels:
+        receiver, rec, put, p, PUT/RECEIVER
+
+    VBA-style logic:
+        if string contains CALL or PAYER -> +1
+        if string contains PUT or RECEIVER -> -1
+    """
+    s = str(option_type).strip().lower()
+
+    if ("payer" in s) or ("call" in s) or s in {"pay", "c"}:
         return PAYER
 
-    if option_type in {"receiver", "rec", "put", "p"}:
+    if ("receiver" in s) or ("put" in s) or s in {"rec", "p"}:
         return RECEIVER
 
     raise ValueError(f"Unsupported option type: {option_type}")
