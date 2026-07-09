@@ -2,9 +2,9 @@
 
 This repository contains a Python refactoring of an Excel/VBA project developed for the **Advanced Interest Rate Models and Market** exam.
 
-The original project, referred to as **AIRMM**, focuses on EUR interest-rate derivatives and implements a swaption pricing and sensitivity workflow in Excel/VBA.
+The original project, referred to as **AIRMM**, focuses on EUR interest-rate derivatives and implements a swaption pricing, implied-volatility, Cash IRR and sensitivity-analysis workflow in Excel/VBA.
 
-The Python implementation reproduces the core AIRMM workflow: construction of implied-volatility cubes, Cash IRR forward premia, shifted-Black sensitivity analytics, and finite-difference validation.
+The Python implementation reproduces the core AIRMM workflow: construction of implied-volatility cubes, Cash IRR forward premia, shifted-Black analytical sensitivities, finite-difference validation, and strategy-level analytics for straddles, strangles and collars.
 
 The implementation is deliberately close to the original VBA logic. The objective is not to replace the original model with a simplified implementation, but to make the spreadsheet workflow auditable, modular, reproducible and easier to validate.
 
@@ -14,7 +14,7 @@ This project was originally developed as part of the **Advanced Interest Rate Mo
 
 The original Excel/VBA implementation analyses EUR physically-settled swaptions using market data as of 31 October 2019.
 
-The Python version refactors the original exam project into a modular codebase while preserving the pricing logic, conventions, numerical methods and output structure of the VBA implementation.
+The Python version refactors the original exam project into a modular codebase while preserving the pricing logic, market conventions, numerical methods, output structure and validation workflow of the VBA implementation.
 
 The Python pipeline performs the following steps:
 
@@ -27,7 +27,10 @@ The Python pipeline performs the following steps:
 5. Computes Cash IRR forward premia from the implied-volatility cube.
 6. Computes shifted-Black analytical Greeks for the 5% shift cube.
 7. Validates Delta and Vega through central finite differences.
-8. Exports all main outputs as CSV files.
+8. Builds strategy-level Cash IRR premia for ATM straddles, OTM collars and OTM strangles.
+9. Builds strategy-level analytical sensitivity tables.
+10. Builds strategy-level Delta and Vega finite-difference tables.
+11. Exports all main outputs as CSV files.
 
 The project also includes the original VBA modules and the original report for auditability.
 
@@ -35,7 +38,7 @@ The project also includes the original VBA modules and the original report for a
 
 The project focuses on EUR swaptions quoted in terms of forward premia.
 
-The original Excel/VBA workflow builds implied-volatility cubes from market swaption quotes, then uses those implied volatilities to analyse instrument-level sensitivities.
+The original Excel/VBA workflow builds implied-volatility cubes from market swaption quotes, then uses those implied volatilities to analyse instrument-level and strategy-level sensitivities.
 
 The core objects are:
 
@@ -49,6 +52,7 @@ Shifted-Black implied volatilities
 Cash IRR forward premia
 Analytical Delta and Vega
 Finite-difference Delta and Vega checks
+Strategy-level straddles, collars and strangles
 Parallel OIS discounting sensitivity
 ```
 
@@ -139,14 +143,50 @@ The project supports the shift values used in the original VBA implementation:
 1%, 2%, 3%, 5%
 ```
 
-The 5% shift cube is used for the sensitivity analytics.
+The 5% shift cube is used for instrument-level and strategy-level sensitivity analytics.
+
+## Strategy-Level Analytics
+
+The Python pipeline reproduces the original AIRMM strategy-level outputs for:
+
+```text
+ATM straddles
+OTM collars
+OTM strangles
+```
+
+The strategy formulas follow the original VBA implementation:
+
+```text
+ATM straddle = 2 * ATM payer premium
+
+Collar       = Call(+moneyness) - Put(-moneyness)
+
+Strangle     = Call(+moneyness) + Put(-moneyness)
+```
+
+For ATM straddle Delta, the original VBA adjustment is preserved:
+
+```text
+ATM straddle Delta = 2 * payer Delta - annuity adjustment
+```
+
+Strategy-level outputs are generated for:
+
+```text
+Cash IRR premia
+Analytical Delta and Vega
+Parallel OIS discounting sensitivity
+Finite-difference Delta
+Finite-difference Vega
+```
 
 ## Repository Structure
 
 ```text
 .
 ├── docs/
-│   └── AIRMM_exam_10_01_2026_group8.pdf
+│   └── report.pdf
 │
 ├── original_vba/
 │   ├── Cash_IRR_fwd_prem.bas
@@ -164,6 +204,11 @@ The 5% shift cube is used for the sensitivity analytics.
 │   ├── cash_irr_summary.csv
 │   ├── sens_long_005.csv
 │   ├── sens_fd_check_005.csv
+│   ├── cash_irr_strategies_005.csv
+│   ├── sens_strat_ana.csv
+│   ├── delta_fd_per1bp.csv
+│   ├── vega_fd_per1pct.csv
+│   ├── strategy_outputs_summary.csv
 │   └── pipeline_summary.csv
 │
 ├── scripts/
@@ -183,6 +228,7 @@ The 5% shift cube is used for the sensitivity analytics.
 │   ├── options.py
 │   ├── sensitivities.py
 │   ├── shifted_black.py
+│   ├── strategies.py
 │   └── vol_cube.py
 │
 ├── .gitignore
@@ -231,6 +277,18 @@ Sensitivities.bas
   -> src/sensitivities.py
   -> src/shifted_black.py
   -> src/options.py
+
+Cash_IRR_fwd_prm_strategies.bas
+  -> src/strategies.py
+
+Sensitivities_strategies_ANA.bas
+  -> src/strategies.py
+
+Delta_strat.bas
+  -> src/strategies.py
+
+Vega_strat.bas
+  -> src/strategies.py
 ```
 
 The original project report is stored in:
@@ -306,16 +364,25 @@ outputs/cash_irr_fwd_prem_long.csv
 outputs/cash_irr_summary.csv
 outputs/sens_long_005.csv
 outputs/sens_fd_check_005.csv
+outputs/cash_irr_strategies_005.csv
+outputs/sens_strat_ana.csv
+outputs/delta_fd_per1bp.csv
+outputs/vega_fd_per1pct.csv
+outputs/strategy_outputs_summary.csv
 outputs/pipeline_summary.csv
 ```
 
 A full run generates the following main table dimensions:
 
 ```text
-VOL_LONG_ALL:               4190 rows, 17 columns
-CASH_IRR_FWD_PREM_LONG:     4190 rows, 21 columns
-SENS_LONG_005:               838 rows, 65 columns
-SENS_FD_CHECK_005:          3762 rows, 29 columns
+VOL_LONG_ALL:                  4190 rows, 17 columns
+CASH_IRR_FWD_PREM_LONG:        4190 rows, 21 columns
+SENS_LONG_005:                  838 rows, 65 columns
+SENS_FD_CHECK_005:             3762 rows, 29 columns
+CashIRR_Strategies_005:          76 rows, 15 columns
+SENS_STRAT_ANA:                 227 rows, 15 columns
+DELTA_FD_per1bp:                227 rows, 15 columns
+VEGA_FD_per1pct:                227 rows, 15 columns
 ```
 
 ## Main Output Tables
@@ -445,6 +512,82 @@ Blank / invalid sensitivity rows:            211
 Finite-difference rows:                     3762 = 627 * 6
 ```
 
+### `cash_irr_strategies_005.csv`
+
+This file is the Python equivalent of the original Excel/VBA `CashIRR_Strategies_005` sheet.
+
+It builds strategy-level Cash IRR forward premia for:
+
+```text
+ATM straddles
+OTM collars
+OTM strangles
+```
+
+The strategy formulas follow the original VBA implementation:
+
+```text
+ATM straddle = 2 * ATM payer premium
+Collar       = Call(+moneyness) - Put(-moneyness)
+Strangle     = Call(+moneyness) + Put(-moneyness)
+```
+
+The output is stored in an Excel-style block layout to remain directly comparable with the original workbook.
+
+### `sens_strat_ana.csv`
+
+This file is the Python equivalent of the original Excel/VBA `SENS_STRAT_ANA` sheet.
+
+It computes analytical strategy-level sensitivities for:
+
+```text
+ATM straddles
+OTM collars
+OTM strangles
+```
+
+The output includes:
+
+```text
+DeltaPrice_per1bp
+VegaPrice_per1pct
+ParDeltaPrice_per1bp
+```
+
+For ATM straddles, the Delta adjustment follows the original VBA strategy logic:
+
+```text
+ATM straddle Delta = 2 * payer Delta - annuity adjustment
+```
+
+### `delta_fd_per1bp.csv`
+
+This file is the Python equivalent of the original Excel/VBA `DELTA_FD_per1bp` sheet.
+
+It builds strategy-level finite-difference Delta estimates for:
+
+```text
+0.5 bps forward bump
+1.0 bps forward bump
+2.0 bps forward bump
+```
+
+The output includes ATM straddles, OTM collars and OTM strangles.
+
+### `vega_fd_per1pct.csv`
+
+This file is the Python equivalent of the original Excel/VBA `VEGA_FD_per1pct` sheet.
+
+It builds strategy-level finite-difference Vega estimates for:
+
+```text
+0.0025 volatility bump
+0.0050 volatility bump
+0.0100 volatility bump
+```
+
+The output includes ATM straddles, OTM collars and OTM strangles.
+
 ## Numerical Methods
 
 ### Implied-Volatility Inversion
@@ -566,6 +709,10 @@ CASH_IRR_FWD_PREM_LONG:
   shape matches the workbook output;
   numerical values match up to floating-point precision.
 
+CashIRR_Strategies_005:
+  shape matches the workbook output;
+  numerical values match up to floating-point precision.
+
 SENS_LONG_005:
   shape matches the workbook output;
   analytical price, Delta, Vega and finite-difference values match up to floating-point precision.
@@ -573,6 +720,18 @@ SENS_LONG_005:
 SENS_FD_CHECK_005:
   shape matches the workbook output;
   finite-difference validation rows match the original logic.
+
+DELTA_FD_per1bp:
+  shape matches the workbook output;
+  strategy-level finite-difference Delta values match up to floating-point precision.
+
+VEGA_FD_per1pct:
+  shape matches the workbook output;
+  strategy-level finite-difference Vega values match up to floating-point precision.
+
+SENS_STRAT_ANA:
+  shape matches the workbook output;
+  strategy-level analytical sensitivities match the original workflow, except for the known parallel-delta calendar treatment difference.
 ```
 
 Implementation note:
@@ -584,11 +743,12 @@ The original workbook may show very small differences in:
 ```text
 ParDeltaAnn_per1bp
 ParDeltaPrice_per1bp
+strategy-level ParDelta sections in SENS_STRAT_ANA
 ```
 
 because of a calendar-loading inconsistency in the original VBA parallel-delta block.
 
-All other main pricing, implied-volatility, Cash IRR, analytical Greek and finite-difference outputs match the original workflow up to floating-point precision.
+All other main pricing, implied-volatility, Cash IRR, strategy-level Cash IRR, analytical Greek, Delta finite-difference and Vega finite-difference outputs match the original workflow up to floating-point precision.
 
 ## Python Modules
 
@@ -730,11 +890,24 @@ SENS_LONG_005
 SENS_FD_CHECK_005
 ```
 
+### `src/strategies.py`
+
+Builds the strategy-level outputs equivalent to:
+
+```text
+CashIRR_Strategies_005
+SENS_STRAT_ANA
+DELTA_FD_per1bp
+VEGA_FD_per1pct
+```
+
+It computes ATM straddles, OTM collars and OTM strangles using the original VBA strategy formulas.
+
 ### `scripts/run_full_pipeline.py`
 
 Main executable wrapper.
 
-It runs the complete project pipeline from local Excel workbooks to generated CSV outputs.
+It runs the complete project pipeline from local Excel workbooks to generated CSV outputs, including volatility cubes, Cash IRR premia, instrument-level sensitivities and strategy-level analytics.
 
 ## Reproducibility Notes
 
