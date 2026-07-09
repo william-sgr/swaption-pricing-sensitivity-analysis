@@ -9,6 +9,10 @@ It reproduces the core VBA workflow:
 2. CASH_IRR_FWD_PREM_LONG
 3. SENS_LONG_005
 4. SENS_FD_CHECK_005
+5. CashIRR_Strategies_005
+6. SENS_STRAT_ANA
+7. DELTA_FD_per1bp
+8. VEGA_FD_per1pct
 
 Usage
 -----
@@ -53,6 +57,13 @@ from src.sensitivities import (
     build_sens_long_005,
     sensitivities_summary,
 )
+from src.strategies import (
+    build_cash_irr_strategies_005,
+    build_delta_fd_per1bp,
+    build_sens_strat_ana,
+    build_vega_fd_per1pct,
+    strategy_outputs_summary,
+)
 from src.vol_cube import build_vol_long_all, volatility_cube_summary
 
 
@@ -66,6 +77,10 @@ class PipelineResult:
     cash_irr: pd.DataFrame
     sens_long_005: pd.DataFrame
     sens_fd_check_005: pd.DataFrame
+    cash_irr_strategies_005: pd.DataFrame
+    sens_strat_ana: pd.DataFrame
+    delta_fd_per1bp: pd.DataFrame
+    vega_fd_per1pct: pd.DataFrame
 
 
 def _write_csv(df: pd.DataFrame, path: Path) -> None:
@@ -127,13 +142,15 @@ def run_full_pipeline(
 
     print(f"  CASH_IRR_FWD_PREM_LONG shape: {cash_irr.shape}")
 
-    print(f"\nBuilding SENS_LONG_{int(DEFAULT_SHIFT * 1000):03d}...")
+    print("\nBuilding SENS_LONG_005...")
     sens_long_005 = build_sens_long_005(
         vol_long=vol_long,
         curve=market_data.ois_curve,
         holidays=market_data.holidays,
         target_shift=DEFAULT_SHIFT,
     )
+
+    _write_csv(sens_long_005, output_path / "sens_long_005.csv")
 
     print(f"  SENS_LONG_005 shape: {sens_long_005.shape}")
 
@@ -145,10 +162,70 @@ def run_full_pipeline(
         target_shift=DEFAULT_SHIFT,
     )
 
+    _write_csv(sens_fd_check_005, output_path / "sens_fd_check_005.csv")
+
     print(f"  SENS_FD_CHECK_005 shape: {sens_fd_check_005.shape}")
 
-    _write_csv(sens_long_005, output_path / "sens_long_005.csv")
-    _write_csv(sens_fd_check_005, output_path / "sens_fd_check_005.csv")
+    print("\nBuilding CashIRR_Strategies_005...")
+    cash_irr_strategies_005 = build_cash_irr_strategies_005(
+        cash_irr=cash_irr,
+        target_shift=DEFAULT_SHIFT,
+    )
+
+    _write_csv(
+        cash_irr_strategies_005,
+        output_path / "cash_irr_strategies_005.csv",
+    )
+
+    print(f"  CashIRR_Strategies_005 shape: {cash_irr_strategies_005.shape}")
+
+    print("\nBuilding SENS_STRAT_ANA...")
+    sens_strat_ana = build_sens_strat_ana(
+        sens_long_005=sens_long_005,
+    )
+
+    _write_csv(
+        sens_strat_ana,
+        output_path / "sens_strat_ana.csv",
+    )
+
+    print(f"  SENS_STRAT_ANA shape: {sens_strat_ana.shape}")
+
+    print("\nBuilding DELTA_FD_per1bp...")
+    delta_fd_per1bp = build_delta_fd_per1bp(
+        sens_long_005=sens_long_005,
+    )
+
+    _write_csv(
+        delta_fd_per1bp,
+        output_path / "delta_fd_per1bp.csv",
+    )
+
+    print(f"  DELTA_FD_per1bp shape: {delta_fd_per1bp.shape}")
+
+    print("\nBuilding VEGA_FD_per1pct...")
+    vega_fd_per1pct = build_vega_fd_per1pct(
+        sens_long_005=sens_long_005,
+    )
+
+    _write_csv(
+        vega_fd_per1pct,
+        output_path / "vega_fd_per1pct.csv",
+    )
+
+    print(f"  VEGA_FD_per1pct shape: {vega_fd_per1pct.shape}")
+
+    strategy_summary = strategy_outputs_summary(
+        cash_irr_strategies=cash_irr_strategies_005,
+        sens_strat_ana=sens_strat_ana,
+        delta_fd_per1bp=delta_fd_per1bp,
+        vega_fd_per1pct=vega_fd_per1pct,
+    )
+
+    _write_csv(
+        strategy_summary,
+        output_path / "strategy_outputs_summary.csv",
+    )
 
     sens_summary = sensitivities_summary(
         sens_long=sens_long_005,
@@ -177,6 +254,26 @@ def run_full_pipeline(
             "Columns": sens_fd_check_005.shape[1],
         },
         {
+            "Table": "CashIRR_Strategies_005",
+            "Rows": cash_irr_strategies_005.shape[0],
+            "Columns": cash_irr_strategies_005.shape[1],
+        },
+        {
+            "Table": "SENS_STRAT_ANA",
+            "Rows": sens_strat_ana.shape[0],
+            "Columns": sens_strat_ana.shape[1],
+        },
+        {
+            "Table": "DELTA_FD_per1bp",
+            "Rows": delta_fd_per1bp.shape[0],
+            "Columns": delta_fd_per1bp.shape[1],
+        },
+        {
+            "Table": "VEGA_FD_per1pct",
+            "Rows": vega_fd_per1pct.shape[0],
+            "Columns": vega_fd_per1pct.shape[1],
+        },
+        {
             "Table": "SENS_LONG_005_VALID_ROWS",
             "Rows": sens_summary["sens_long_valid_rows"],
             "Columns": None,
@@ -202,6 +299,11 @@ def run_full_pipeline(
         "cash_irr_summary.csv",
         "sens_long_005.csv",
         "sens_fd_check_005.csv",
+        "cash_irr_strategies_005.csv",
+        "sens_strat_ana.csv",
+        "delta_fd_per1bp.csv",
+        "vega_fd_per1pct.csv",
+        "strategy_outputs_summary.csv",
         "pipeline_summary.csv",
     ]
 
@@ -213,6 +315,10 @@ def run_full_pipeline(
         cash_irr=cash_irr,
         sens_long_005=sens_long_005,
         sens_fd_check_005=sens_fd_check_005,
+        cash_irr_strategies_005=cash_irr_strategies_005,
+        sens_strat_ana=sens_strat_ana,
+        delta_fd_per1bp=delta_fd_per1bp,
+        vega_fd_per1pct=vega_fd_per1pct,
     )
 
 
