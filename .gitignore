@@ -1,10 +1,19 @@
-# Raw market data and original deliverables
+# Raw market data and Excel workbooks
 data/
 *.xlsx
 *.xls
 *.xlsm
+
+# Ignore generic PDFs unless explicitly allowed below
 *.pdf
-*.bas
+
+# Allow project documentation/report PDFs
+!docs/
+!docs/*.pdf
+
+# Allow original VBA source files
+!original_vba/
+!original_vba/*.bas
 
 # Python cache
 __pycache__/
