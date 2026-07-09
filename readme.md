@@ -236,7 +236,7 @@ Sensitivities.bas
 The original project report is stored in:
 
 ```text
-docs/AIRMM_exam_10_01_2026_group8.pdf
+docs/report.pdf
 ```
 
 The Excel workbooks are intentionally not committed because they contain raw input data and spreadsheet-generated outputs.
